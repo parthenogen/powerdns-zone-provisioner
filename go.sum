@@ -1,0 +1,9 @@
+github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
+github.com/h2non/parth v0.0.0-20190131123155-b4df798d6542 h1:2VTzZjLZBgl62/EtslCrtky5vbi9dd7HrQPQIx6wqiw=
+github.com/mittwald/go-powerdns v0.6.0 h1:KuVc9Kcr9Fol9ZApiO9AZ/4a6ApK1j2C/0zLo/vT//c=
+github.com/mittwald/go-powerdns v0.6.0/go.mod h1:adWJ860laOgm14afg+7V0nCa5NQT37oEYe2HRhoS/CA=
+github.com/parthenogen/redis-cluster v0.0.0-20220812105630-383de2418963 h1:3pji9PM5S48yWMiD9VO8wR8iSfhw2XnK41RECQojhfQ=
+github.com/parthenogen/redis-cluster v0.0.0-20220812105630-383de2418963/go.mod h1:LqHMQJb5U3Wos20sGZGOyFEPg1n0iCtFGDfbMgW7WFY=
+github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
+github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0Q=
+gopkg.in/h2non/gock.v1 v1.0.14 h1:fTeu9fcUvSnLNacYvYI54h+1/XEteDyHvrVCZEEEYNM=
