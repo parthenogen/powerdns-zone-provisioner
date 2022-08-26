@@ -2,10 +2,10 @@ package docker
 
 import (
 	"io"
-	"net"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/parthenogen/redis-cluster/test/pkg/docker"
 )
@@ -15,14 +15,13 @@ func TestContainer(t *testing.T) {
 		ipAddress = "127.0.0.1"
 		port      = "8081"
 
-		address          = ipAddress + ":" + port
 		apiKey           = "test"
 		buildContextPath = "../../.."
 		dockerfilePath   = "../../build/powerdns-auth/Dockerfile"
 		imageRef         = "test-container"
 		network          = "tcp"
-		portMapping      = address + ":" + port
-		url              = "http://" + address + "/api"
+		timeout          = time.Second * 3
+		url              = "http://" + ipAddress + ":" + port + "/api"
 		xAPIKeyHeaderKey = "X-API-Key"
 
 		expectedResponse = `[{"url": "/api/v1", "version": 1}]`
@@ -32,7 +31,6 @@ func TestContainer(t *testing.T) {
 		container *Container
 
 		client         http.Client
-		dialer         net.Dialer
 		request        *http.Request
 		response       *http.Response
 		responseBytes  []byte
@@ -47,19 +45,15 @@ func TestContainer(t *testing.T) {
 	}
 
 	container, e = NewContainer(imageRef,
-		WithPortMapping(portMapping),
+		WithPortMapping(ipAddress, port, port, network),
 	)
 	if e != nil {
 		t.Fatal(e)
 	}
 
-	container.Run()
-
-	for {
-		_, e = dialer.Dial(network, address)
-		if e == nil {
-			break
-		}
+	e = container.RunAndDial(timeout)
+	if e != nil {
+		t.Fatal(e)
 	}
 
 	request, e = http.NewRequest(http.MethodGet, url, nil)

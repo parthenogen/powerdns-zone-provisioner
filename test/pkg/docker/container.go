@@ -3,13 +3,16 @@ package docker
 import (
 	"os"
 	"os/exec"
+	"time"
+
+	"github.com/parthenogen/powerdns-zone-provisioner/test/pkg/transport"
 )
 
 type Container struct {
 	command *exec.Cmd
 	errors  chan error
 
-	portMappings []string // e.g., {"127.0.0.1:5353:53/udp"}
+	portMappings []PortMapping
 }
 
 func NewContainer(imageRef string, options ...containerOption) (
@@ -54,7 +57,7 @@ func (c *Container) makeCommandArgs(imageRef string) (commandArgs []string) {
 	)
 
 	var (
-		portMapping string
+		portMapping PortMapping
 	)
 
 	commandArgs = []string{
@@ -64,7 +67,10 @@ func (c *Container) makeCommandArgs(imageRef string) (commandArgs []string) {
 	}
 
 	for _, portMapping = range c.portMappings {
-		commandArgs = append(commandArgs, publishFlag, portMapping)
+		commandArgs = append(commandArgs,
+			publishFlag,
+			portMapping.String(),
+		)
 	}
 
 	commandArgs = append(commandArgs, imageRef)
@@ -74,6 +80,30 @@ func (c *Container) makeCommandArgs(imageRef string) (commandArgs []string) {
 
 func (c *Container) Run() {
 	go c.run()
+
+	return
+}
+
+func (c *Container) RunAndDial(dialerTimeout time.Duration) (e error) {
+	var (
+		dialer      *transport.Dialer
+		portMapping PortMapping
+	)
+
+	go c.run()
+
+	dialer = transport.NewDialer()
+
+	for _, portMapping = range c.portMappings {
+		e = dialer.Dial(
+			portMapping.Network(),
+			portMapping.Address(),
+			dialerTimeout,
+		)
+		if e != nil {
+			return
+		}
+	}
 
 	return
 }
@@ -102,9 +132,13 @@ func (c *Container) Stop() {
 
 type containerOption func(*Container) error
 
-func WithPortMapping(portMapping string) (o containerOption) {
+func WithPortMapping(host, port, containerPort, network string) (
+	o containerOption,
+) {
 	o = func(c *Container) (e error) {
-		c.portMappings = append(c.portMappings, portMapping)
+		c.portMappings = append(c.portMappings,
+			NewPortMapping(host, port, containerPort, network),
+		)
 
 		return
 	}
