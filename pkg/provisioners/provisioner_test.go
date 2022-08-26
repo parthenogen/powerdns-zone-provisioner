@@ -1,13 +1,11 @@
 package provisioners
 
 import (
-	"context"
-	"net"
 	"testing"
 	"time"
 
-	"github.com/miekg/dns"
 	"github.com/mittwald/go-powerdns/apis/zones"
+	"github.com/parthenogen/powerdns-zone-provisioner/test/pkg/dns"
 	"github.com/parthenogen/powerdns-zone-provisioner/test/pkg/docker"
 )
 
@@ -17,41 +15,32 @@ func TestProvisioner(t *testing.T) {
 		portAPI   = "8081"
 		portDNS   = "5353"
 
-		addressAPI = ipAddress + ":" + portAPI
-		addressDNS = ipAddress + ":" + portDNS
-
 		apiKey           = "test"
-		baseURL          = "http://" + addressAPI
 		buildContextPath = "../.."
+		containerPortDNS = "53"
 		dockerfilePath   = "../../test/build/powerdns-auth/Dockerfile"
 		imageRef         = "test-provisioner"
 		networkAPI       = "tcp"
 		networkDNS       = "udp"
-		portMappingAPI   = addressAPI + ":" + portAPI
-		portMappingDNS   = addressDNS + ":" + "53/udp"
 		serverID         = "localhost"
-		timeout          = time.Second
+		timeout          = time.Second * 3
 
 		zoneName = "example.com."
 
-		rrSetName   = "www.example.com."
+		rrSetName   = "www." + zoneName
 		rrSetRecord = "192.0.2.1"
 		rrSetTTL    = 60
 		rrSetType   = "A"
 	)
 
 	var (
-		dialer net.Dialer
 		server *docker.Container
 
-		p *provisioner
-
-		ctx  context.Context
+		p    *provisioner
 		zone zones.Zone
 
-		client  dns.Client
-		ipAddr  net.IPAddr
-		message *dns.Msg
+		answer []string
+		client *dns.Client
 
 		e error
 	)
@@ -62,23 +51,19 @@ func TestProvisioner(t *testing.T) {
 	}
 
 	server, e = docker.NewContainer(imageRef,
-		docker.WithPortMapping(portMappingAPI),
-		docker.WithPortMapping(portMappingDNS),
+		docker.WithPortMapping(ipAddress, portAPI, portAPI, networkAPI),
+		docker.WithPortMapping(ipAddress, portDNS, containerPortDNS, networkDNS),
 	)
 	if e != nil {
 		t.Fatal(e)
 	}
 
-	server.Run()
-
-	for {
-		_, e = dialer.Dial(networkAPI, addressAPI)
-		if e == nil {
-			break
-		}
+	e = server.RunAndDial(timeout)
+	if e != nil {
+		t.Fatal(e)
 	}
 
-	p, e = NewProvisioner(baseURL, apiKey, serverID)
+	p, e = NewProvisioner(ipAddress, portAPI, apiKey, serverID)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -99,41 +84,23 @@ func TestProvisioner(t *testing.T) {
 		},
 	}
 
-	ctx, _ = context.WithTimeout(
-		context.Background(),
-		timeout,
-	)
-
-	e = p.Provision(zone, ctx)
+	e = p.Provision(zone, timeout)
 	if e != nil {
 		t.Fatal(e)
 	}
 
-	for {
-		_, e = dialer.Dial(networkDNS, addressDNS)
-		if e == nil {
-			break
-		}
-	}
+	client = dns.NewClient()
 
-	message = new(dns.Msg)
-
-	message.SetQuestion(rrSetName, dns.TypeA)
-
-	message, _, e = client.Exchange(message, addressDNS)
+	answer, e = client.QueryTypeA(ipAddress, portDNS, rrSetName)
 	if e != nil {
 		t.Fatal(e)
 	}
 
-	if len(message.Answer) != 1 {
+	if len(answer) != 1 {
 		t.Fail()
 	}
 
-	ipAddr = net.IPAddr{
-		IP: message.Answer[0].(*dns.A).A,
-	}
-
-	if ipAddr.String() != rrSetRecord {
+	if answer[0] != rrSetRecord {
 		t.Fail()
 	}
 
