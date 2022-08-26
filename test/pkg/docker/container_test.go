@@ -56,6 +56,8 @@ func TestContainer(t *testing.T) {
 		t.Fatal(e)
 	}
 
+	defer container.Stop()
+
 	request, e = http.NewRequest(http.MethodGet, url, nil)
 	if e != nil {
 		t.Fatal(e)

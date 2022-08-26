@@ -63,6 +63,8 @@ func TestProvisioner(t *testing.T) {
 		t.Fatal(e)
 	}
 
+	defer server.Stop()
+
 	p, e = NewProvisioner(ipAddress, portAPI, apiKey, serverID)
 	if e != nil {
 		t.Fatal(e)
