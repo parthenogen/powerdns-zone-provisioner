@@ -65,7 +65,7 @@ func TestProvisioner(t *testing.T) {
 
 	defer server.Stop()
 
-	p, e = NewProvisioner(ipAddress, portAPI, apiKey, serverID)
+	p, e = NewProvisioner(ipAddress, portAPI, apiKey, serverID, timeout)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -86,7 +86,7 @@ func TestProvisioner(t *testing.T) {
 		},
 	}
 
-	e = p.Provision(zone, timeout)
+	e = p.Provision(zone)
 	if e != nil {
 		t.Fatal(e)
 	}

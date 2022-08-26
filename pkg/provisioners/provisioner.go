@@ -13,9 +13,12 @@ import (
 type provisioner struct {
 	client   zones.Client
 	serverID string
+	timeout  time.Duration
 }
 
-func NewProvisioner(serverHost, serverPort, apiKey, serverID string) (
+func NewProvisioner(
+	serverHost, serverPort, apiKey, serverID string, timeout time.Duration,
+) (
 	p *provisioner, e error,
 ) {
 	const (
@@ -46,21 +49,20 @@ func NewProvisioner(serverHost, serverPort, apiKey, serverID string) (
 	p = &provisioner{
 		client:   client.Zones(),
 		serverID: serverID,
+		timeout:  timeout,
 	}
 
 	return
 }
 
-func (p *provisioner) Provision(zone zones.Zone, timeout time.Duration) (
-	e error,
-) {
+func (p *provisioner) Provision(zone zones.Zone) (e error) {
 	var (
 		timer context.Context
 	)
 
 	timer, _ = context.WithTimeout(
 		context.Background(),
-		timeout,
+		p.timeout,
 	)
 
 	_, e = p.client.CreateZone(
