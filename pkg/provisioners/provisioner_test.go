@@ -5,25 +5,15 @@ import (
 	"time"
 
 	"github.com/mittwald/go-powerdns/apis/zones"
+	"github.com/parthenogen/powerdns-zone-provisioner/test"
 	"github.com/parthenogen/powerdns-zone-provisioner/test/pkg/dns"
-	"github.com/parthenogen/powerdns-zone-provisioner/test/pkg/docker"
 )
 
 func TestProvisioner(t *testing.T) {
 	const (
-		ipAddress = "127.0.0.1"
-		portAPI   = "8081"
-		portDNS   = "5353"
+		goModRoot = "../.."
 
-		apiKey           = "test"
-		buildContextPath = "../.."
-		containerPortDNS = "53"
-		dockerfilePath   = "../../test/build/powerdns-auth/Dockerfile"
-		imageRef         = "test-provisioner"
-		networkAPI       = "tcp"
-		networkDNS       = "udp"
-		serverID         = "localhost"
-		timeout          = time.Second * 3
+		timeout = time.Second * 3
 
 		zoneName = "example.com."
 
@@ -34,7 +24,7 @@ func TestProvisioner(t *testing.T) {
 	)
 
 	var (
-		server *docker.Container
+		auth *test.PowerDNSAuth
 
 		p    *provisioner
 		zone zones.Zone
@@ -45,27 +35,20 @@ func TestProvisioner(t *testing.T) {
 		e error
 	)
 
-	e = docker.Build(buildContextPath, dockerfilePath, imageRef)
+	auth, e = test.NewPowerDNSAuth(goModRoot, timeout)
 	if e != nil {
 		t.Fatal(e)
 	}
 
-	server, e = docker.NewContainer(imageRef,
-		docker.WithPortMapping(ipAddress, portAPI, portAPI, networkAPI),
-		docker.WithPortMapping(ipAddress, portDNS, containerPortDNS, networkDNS),
+	defer auth.Stop()
+
+	p, e = NewProvisioner(
+		auth.IPAddress(),
+		auth.PortAPI(),
+		auth.APIKey(),
+		auth.ServerID(),
+		timeout,
 	)
-	if e != nil {
-		t.Fatal(e)
-	}
-
-	e = server.RunAndDial(timeout)
-	if e != nil {
-		t.Fatal(e)
-	}
-
-	defer server.Stop()
-
-	p, e = NewProvisioner(ipAddress, portAPI, apiKey, serverID, timeout)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -93,7 +76,11 @@ func TestProvisioner(t *testing.T) {
 
 	client = dns.NewClient()
 
-	answer, e = client.QueryTypeA(ipAddress, portDNS, rrSetName)
+	answer, e = client.QueryTypeA(
+		auth.IPAddress(),
+		auth.PortDNS(),
+		rrSetName,
+	)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -106,9 +93,7 @@ func TestProvisioner(t *testing.T) {
 		t.Fail()
 	}
 
-	server.Stop()
-
-	e = server.Error()
+	e = auth.Stop()
 	if e != nil {
 		t.Log(e)
 	}

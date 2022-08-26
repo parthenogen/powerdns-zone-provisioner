@@ -120,8 +120,15 @@ func (c *Container) run() {
 	return
 }
 
-func (c *Container) Error() error {
-	return <-c.errors
+func (c *Container) Error() (e error) {
+	select {
+	case e = <-c.errors:
+		return
+
+	default:
+	}
+
+	return
 }
 
 func (c *Container) Stop() {
