@@ -1,14 +1,12 @@
 package docker
 
 import (
-	"context"
 	"os"
 	"os/exec"
 )
 
 type Container struct {
 	command *exec.Cmd
-	cancel  context.CancelFunc
 	errors  chan error
 
 	portMappings []string // e.g., {"127.0.0.1:5353:53/udp"}
@@ -22,18 +20,10 @@ func NewContainer(imageRef string, options ...containerOption) (
 	)
 
 	var (
-		contextCancelFunc context.CancelFunc
-		contextWithCancel context.Context
-
 		option containerOption
 	)
 
-	contextWithCancel, contextCancelFunc = context.WithCancel(
-		context.Background(),
-	)
-
 	c = &Container{
-		cancel: contextCancelFunc,
 		errors: make(chan error),
 	}
 
@@ -44,8 +34,7 @@ func NewContainer(imageRef string, options ...containerOption) (
 		}
 	}
 
-	c.command = exec.CommandContext(contextWithCancel,
-		commandName,
+	c.command = exec.Command(commandName,
 		c.makeCommandArgs(imageRef)...,
 	)
 
@@ -59,6 +48,7 @@ func (c *Container) makeCommandArgs(imageRef string) (commandArgs []string) {
 	const (
 		commandArg0 = "run"
 		commandArg1 = "--rm"
+		commandArg2 = "--init"
 
 		publishFlag = "-p"
 	)
@@ -70,6 +60,7 @@ func (c *Container) makeCommandArgs(imageRef string) (commandArgs []string) {
 	commandArgs = []string{
 		commandArg0,
 		commandArg1,
+		commandArg2,
 	}
 
 	for _, portMapping = range c.portMappings {
@@ -104,7 +95,7 @@ func (c *Container) Error() error {
 }
 
 func (c *Container) Stop() {
-	c.cancel()
+	c.command.Process.Signal(os.Interrupt)
 
 	return
 }
