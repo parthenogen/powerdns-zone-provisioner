@@ -3,9 +3,11 @@ module github.com/parthenogen/powerdns-zone-provisioner
 go 1.19
 
 require (
+	github.com/caarlos0/env/v6 v6.10.0
 	github.com/miekg/dns v1.1.50
 	github.com/mittwald/go-powerdns v0.6.0
 	github.com/parthenogen/redis-cluster v0.0.0-20220812105630-383de2418963
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

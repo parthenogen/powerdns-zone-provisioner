@@ -1,0 +1,8 @@
+---
+- name: %s
+  resourcerecordsets:
+  - name: %s
+    type: A
+    ttl: 60
+    records:
+    - content: %s
