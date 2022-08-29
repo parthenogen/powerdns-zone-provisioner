@@ -1,0 +1,59 @@
+name: Test, Build, Push
+on:
+  push:
+    paths-ignore:
+      - "LICENSE"
+      - "README"
+      - "README.md"
+
+jobs:
+  test-build-push:
+    runs-on: ubuntu-latest
+
+    env:
+      CGO_ENABLED: 0
+      IMAGE_NAME: ghcr.io/parthenogen/powerdns-zone-provisioner
+
+    steps:
+      - name: Docker Login
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.19"
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache Go Modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Go Test
+        run: go test -p 1 ./...
+
+      - name: Go Build
+        run: mkdir bin && go build -o bin ./cmd/...
+
+      - name: Docker Build
+        run: >
+          docker build
+          -t $IMAGE_NAME:latest
+          -t $IMAGE_NAME:0
+          -t $IMAGE_NAME:0.0
+          -t $IMAGE_NAME:0.0.0
+          .
+
+      - name: Docker Push
+        run: docker push --all-tags $IMAGE_NAME
