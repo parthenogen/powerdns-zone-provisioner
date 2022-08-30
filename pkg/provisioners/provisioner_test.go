@@ -93,6 +93,30 @@ func TestProvisioner(t *testing.T) {
 		t.Fail()
 	}
 
+	// test re-provisioning of existing zone
+
+	e = p.Provision(zone)
+	if e != nil {
+		t.Fatal(e)
+	}
+
+	answer, e = client.QueryTypeA(
+		auth.IPAddress(),
+		auth.PortDNS(),
+		rrSetName,
+	)
+	if e != nil {
+		t.Fatal(e)
+	}
+
+	if len(answer) != 1 {
+		t.Fail()
+	}
+
+	if answer[0] != rrSetRecord {
+		t.Fail()
+	}
+
 	e = auth.Stop()
 	if e != nil {
 		t.Log(e)

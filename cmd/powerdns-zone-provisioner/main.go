@@ -65,7 +65,7 @@ func main() {
 	for _, zone = range zoneList {
 		e = p.Provision(zone)
 		if e != nil {
-			log.Println(e)
+			log.Fatalln(e)
 		}
 	}
 }

@@ -65,6 +65,33 @@ func (p *provisioner) Provision(zone zones.Zone) (e error) {
 		p.timeout,
 	)
 
+	_, e = p.client.GetZone(
+		timer,
+		p.serverID,
+		zone.Name,
+	)
+
+	if e == nil { // zone exists
+		timer, _ = context.WithTimeout(
+			context.Background(),
+			p.timeout,
+		)
+
+		e = p.client.DeleteZone(
+			timer,
+			p.serverID,
+			zone.Name,
+		)
+		if e != nil {
+			return
+		}
+	}
+
+	timer, _ = context.WithTimeout(
+		context.Background(),
+		p.timeout,
+	)
+
 	_, e = p.client.CreateZone(
 		timer,
 		p.serverID,
