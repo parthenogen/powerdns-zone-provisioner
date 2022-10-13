@@ -6,8 +6,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/parthenogen/redis-cluster/test/pkg/docker"
 )
 
 func TestContainer(t *testing.T) {
@@ -39,7 +37,7 @@ func TestContainer(t *testing.T) {
 		e error
 	)
 
-	e = docker.Build(buildContextPath, dockerfilePath, imageRef)
+	e = Build(buildContextPath, dockerfilePath, imageRef)
 	if e != nil {
 		t.Fatal(e)
 	}
